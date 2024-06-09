@@ -80,7 +80,7 @@ void builtin_cd(int argc, char **argv)
 	{
 		const char *home = getenv("HOME");
 		if (!home)
-			printf("cd: $HOME is not set");
+			printf("cd: $HOME is not set\n");
 		else
 		{
 			strcpy(absolute_path, home);
