@@ -2,7 +2,7 @@
 #define SHELL_H
 
 #include <stdbool.h>
-#include <linux/limits.h>
+#include <limits.h>
 
 typedef void (*builtin_t)(int, char **);
 
