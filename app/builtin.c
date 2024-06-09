@@ -63,10 +63,28 @@ void builtin_pwd(int argc, char **argv)
 	printf("%s\n", path);
 }
 
+void builtin_cd(int argc, char **argv)
+{
+	char absolute_path[PATH_MAX] = {};
+
+	const char *path = argv[1];
+	
+	if (path[0] == '/')
+		strcpy(absolute_path, path);
+
+	if (!*absolute_path)
+		return;
+	
+	if (chdir(path) == -1)
+		printf("cd: %s: No such file or directory\n", path);
+}
+
 builtin_entry_t builtin_registry[] = {
 	{"exit", builtin_exit},
 	{"echo", builtin_echo},
 	{"type", builtin_type},
+	{"pwd", builtin_pwd},
+	{"cd", builtin_cd},
 	{},
 };
 
