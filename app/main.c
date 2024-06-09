@@ -11,9 +11,12 @@ typedef struct
 	builtin_t function;
 } builtin_entry_t;
 
-void builtin_exit(int, char **)
+void builtin_exit(int argc, char **argv)
 {
 	exit(0);
+
+	(void)argc;
+	(void)argv;
 }
 
 builtin_entry_t builtin_registry[] = {
