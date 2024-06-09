@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "shell.h"
 
@@ -52,6 +53,14 @@ void builtin_type(int argc, char **argv)
     }
 
 	printf("%s not found\n", program);
+}
+
+void builtin_pwd(int argc, char **argv)
+{
+	char path[PATH_MAX] = {};
+	getcwd(path, sizeof(path));
+
+	printf("%s\n", path);
 }
 
 builtin_entry_t builtin_registry[] = {
