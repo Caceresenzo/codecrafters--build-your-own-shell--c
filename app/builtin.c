@@ -40,7 +40,7 @@ void builtin_type(int argc, char **argv)
 	builtin_t builtin = builtin_find(program);
 	if (builtin)
 	{
-		printf("%s: is a shell builtin\n", program);
+		printf("%s is a shell builtin\n", program);
 		return;
 	}
 
