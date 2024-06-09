@@ -76,11 +76,23 @@ void builtin_cd(int argc, char **argv)
 		getcwd(absolute_path, sizeof(absolute_path));
 		strcat(absolute_path, path);
 	}
+	else if (path[0] == '~')
+	{
+		const char *home = getenv("HOME");
+		if (!home)
+			printf("cd: $HOME is not set");
+		else
+		{
+			strcpy(absolute_path, home);
+			strcat(absolute_path, "/");
+			strcat(absolute_path, path + 1 /* ~ */);
+		}
+	}
 
 	if (!*absolute_path)
 		return;
 
-	if (chdir(path) == -1)
+	if (chdir(absolute_path) == -1)
 		printf("cd: %s: No such file or directory\n", path);
 }
 
