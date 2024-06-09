@@ -19,8 +19,23 @@ void builtin_exit(int argc, char **argv)
 	(void)argv;
 }
 
+void builtin_echo(int argc, char **argv)
+{
+	int last = argc - 1;
+	for (int index = 1; index < argc; ++index)
+	{
+		printf("%s", argv[index]);
+
+		if (index != last)
+			printf(" ");
+	}
+	
+	printf("\n");
+}
+
 builtin_entry_t builtin_registry[] = {
 	{"exit", builtin_exit},
+	{"echo", builtin_echo},
 	{},
 };
 
