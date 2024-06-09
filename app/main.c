@@ -3,8 +3,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include <fcntl.h>
+#include <limits.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "shell.h"
 
@@ -76,49 +77,25 @@ void shell_eval(char *line)
 		return;
 	}
 
-	printf("%s: command not found\n", program);
-}
-
-static size_t strlen_or(const char *str, char alternative_end)
-{
-	const char *start = str;
-
-	while (*str && *str != alternative_end)
-		++str;
-
-	return (str - start);
-}
-
-bool locate(const char *program, char output[static PATH_MAX])
-{
-	const char *paths = getenv("PATH");
-	if (!paths)
-		return (false);
-
-	const char *directory = paths;
-	while (true)
+	char path[PATH_MAX] = {};
+	if (locate(program, path))
 	{
-		size_t length = strlen_or(directory, ':');
-		bool last = directory[length] == '\0';
-
-		char path[PATH_MAX] = {};
-		memcpy(path, directory, length);
-		path[length] = '/';
-		strcat(path + length + 1, program);
-
-		if (access(path, F_OK | X_OK) == 0)
+		pid_t pid = fork();
+		if (pid == -1)
+			perror("fork");
+		else if (pid == 0)
 		{
-			strcpy(output, path);
-			return (true);
+			execvp(path, argv);
+			perror("execvp");
+			exit(1);
 		}
+		else
+			waitpid(pid, NULL, 0);
 
-		if (last)
-			break;
-
-		directory += length + 1;
+		return;
 	}
 
-	return (false);
+	printf("%s: command not found\n", program);
 }
 
 int main()
