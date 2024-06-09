@@ -3,54 +3,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-typedef void (*builtin_t)(int, char **);
-typedef struct
-{
-	const char *name;
-	builtin_t function;
-} builtin_entry_t;
+#include "shell.h"
 
-void builtin_exit(int argc, char **argv)
-{
-	exit(0);
-
-	(void)argc;
-	(void)argv;
-}
-
-void builtin_echo(int argc, char **argv)
-{
-	int last = argc - 1;
-	for (int index = 1; index < argc; ++index)
-	{
-		printf("%s", argv[index]);
-
-		if (index != last)
-			printf(" ");
-	}
-	
-	printf("\n");
-}
-
-builtin_entry_t builtin_registry[] = {
-	{"exit", builtin_exit},
-	{"echo", builtin_echo},
-	{},
-};
-
-builtin_t builtin_find(const char *name)
-{
-	for (builtin_entry_t *entry = builtin_registry; entry->name; ++entry)
-	{
-		if (strcmp(entry->name, name) == 0)
-			return (entry->function);
-	}
-
-	return (NULL);
-}
-
-bool read(char *buffer, size_t buffer_size)
+bool shell_read(char *buffer, size_t buffer_size)
 {
 	while (true)
 	{
@@ -78,7 +36,7 @@ bool read(char *buffer, size_t buffer_size)
 	return (true);
 }
 
-void eval(char *line)
+void shell_eval(char *line)
 {
 	int argc = 1;
 	for (char *ptr = line; *ptr; ++ptr)
@@ -98,7 +56,7 @@ void eval(char *line)
 	{
 		char *previous = argv[index - 1];
 		size_t offset = strlen(previous) + 1 /* null terminator */;
-		
+
 		// printf("previous=`%s`  offset=%ld\n", previous, offset);
 
 		argv[index] = previous + offset;
@@ -121,16 +79,58 @@ void eval(char *line)
 	printf("%s: command not found\n", program);
 }
 
+static size_t strlen_or(const char *str, char alternative_end)
+{
+	const char *start = str;
+
+	while (*str && *str != alternative_end)
+		++str;
+
+	return (str - start);
+}
+
+bool locate(const char *program, char output[static PATH_MAX])
+{
+	const char *paths = getenv("PATH");
+	if (!paths)
+		return (false);
+
+	const char *directory = paths;
+	while (true)
+	{
+		size_t length = strlen_or(directory, ':');
+		bool last = directory[length] == '\0';
+
+		char path[PATH_MAX] = {};
+		memcpy(path, directory, length);
+		path[length] = '/';
+		strcat(path + length + 1, program);
+
+		if (access(path, F_OK | X_OK) == 0)
+		{
+			strcpy(output, path);
+			return (true);
+		}
+
+		if (last)
+			break;
+
+		directory += length + 1;
+	}
+
+	return (false);
+}
+
 int main()
 {
 	char line[100];
 
 	while (true)
 	{
-		if (!read(line, sizeof(line)))
+		if (!shell_read(line, sizeof(line)))
 			break;
 
-		eval(line);
+		shell_eval(line);
 	}
 
 	return (EXIT_SUCCESS);
