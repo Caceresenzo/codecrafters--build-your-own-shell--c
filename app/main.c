@@ -4,6 +4,34 @@
 #include <ctype.h>
 #include <stdbool.h>
 
+typedef void (*builtin_t)(int, char **);
+typedef struct
+{
+	const char *name;
+	builtin_t function;
+} builtin_entry_t;
+
+void builtin_exit(int, char **)
+{
+	exit(0);
+}
+
+builtin_entry_t builtin_registry[] = {
+	{"exit", builtin_exit},
+	{},
+};
+
+builtin_t builtin_find(const char *name)
+{
+	for (builtin_entry_t *entry = builtin_registry; entry->name; ++entry)
+	{
+		if (strcmp(entry->name, name) == 0)
+			return (entry->function);
+	}
+
+	return (NULL);
+}
+
 bool read(char *buffer, size_t buffer_size)
 {
 	while (true)
@@ -17,7 +45,7 @@ bool read(char *buffer, size_t buffer_size)
 		size_t length = strlen(buffer);
 		if (length == 0)
 			return (false);
-		
+
 		if (buffer[length - 1] == '\n')
 		{
 			buffer[--length] = '\0';
@@ -34,17 +62,44 @@ bool read(char *buffer, size_t buffer_size)
 
 void eval(char *line)
 {
-	size_t space_count = 0;
+	int argc = 1;
 	for (char *ptr = line; *ptr; ++ptr)
 	{
 		if (isspace(*ptr))
 		{
 			*ptr = '\0';
-			++space_count;
+			++argc;
 		}
 	}
 
+	char *argv[argc + 1];
+	argv[0] = line;
+	argv[argc] = NULL;
+
+	for (int index = 1; index < argc; ++index)
+	{
+		char *previous = argv[index - 1];
+		size_t offset = strlen(previous) + 1 /* null terminator */;
+		
+		// printf("previous=`%s`  offset=%ld\n", previous, offset);
+
+		argv[index] = previous + offset;
+	}
+
+	// for (int index = 0; index <= argc; ++index)
+	// {
+	// 	printf("argv[%d] = `%s`\n", index, argv[index]);
+	// }
+
 	char *program = line;
+
+	builtin_t builtin = builtin_find(program);
+	if (builtin)
+	{
+		builtin(argc, argv);
+		return;
+	}
+
 	printf("%s: command not found\n", program);
 }
 
@@ -56,7 +111,7 @@ int main()
 	{
 		if (!read(line, sizeof(line)))
 			break;
-		
+
 		eval(line);
 	}
 
