@@ -30,7 +30,7 @@ void builtin_echo(int argc, char **argv)
 		if (index != last)
 			printf(" ");
 	}
-	
+
 	printf("\n");
 }
 
@@ -46,11 +46,11 @@ void builtin_type(int argc, char **argv)
 	}
 
 	char path[PATH_MAX] = {};
-    if (locate(program, path))
-    {
-	    printf("%s is %s\n", program, path);
+	if (locate(program, path))
+	{
+		printf("%s is %s\n", program, path);
 		return;
-    }
+	}
 
 	printf("%s not found\n", program);
 }
@@ -68,13 +68,18 @@ void builtin_cd(int argc, char **argv)
 	char absolute_path[PATH_MAX] = {};
 
 	const char *path = argv[1];
-	
+
 	if (path[0] == '/')
 		strcpy(absolute_path, path);
+	else if (path[0] == '.')
+	{
+		getcwd(absolute_path, sizeof(absolute_path));
+		strcat(absolute_path, path);
+	}
 
 	if (!*absolute_path)
 		return;
-	
+
 	if (chdir(path) == -1)
 		printf("cd: %s: No such file or directory\n", path);
 }
