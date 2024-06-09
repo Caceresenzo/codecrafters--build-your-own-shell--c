@@ -74,13 +74,14 @@ void builtin_cd(int argc, char **argv)
 	else if (path[0] == '.')
 	{
 		getcwd(absolute_path, sizeof(absolute_path));
+		strcat(absolute_path, "/");
 		strcat(absolute_path, path);
 	}
 	else if (path[0] == '~')
 	{
 		const char *home = getenv("HOME");
 		if (!home)
-			printf("cd: $HOME is not set");
+			printf("cd: $HOME is not set\n");
 		else
 		{
 			strcpy(absolute_path, home);
