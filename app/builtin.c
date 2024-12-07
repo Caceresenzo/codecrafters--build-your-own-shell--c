@@ -52,7 +52,7 @@ void builtin_type(int argc, char **argv)
 		return;
 	}
 
-	printf("%s not found\n", program);
+	printf("%s: not found\n", program);
 }
 
 void builtin_pwd(int argc, char **argv)
