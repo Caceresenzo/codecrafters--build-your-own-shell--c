@@ -34,6 +34,14 @@ static void argv_grow(
     (*argv)[*argc] = NULL;
 }
 
+static char map_backslash_character(char character)
+{
+    if (character == DOUBLE || character == BACKSLASH)
+        return (character);
+    
+    return (END);
+}
+
 static void backslash(
     const char *line,
     size_t line_length,
@@ -49,7 +57,14 @@ static void backslash(
     char character = line[*index];
 
     if (in_quote)
-        builder[(*builder_length)++] = BACKSLASH;
+    {
+        char mapped = map_backslash_character(character);
+
+        if (mapped != END)
+            character = mapped;
+        else
+            builder[(*builder_length)++] = BACKSLASH;
+    }
 
     builder[(*builder_length)++] = character;
 }
