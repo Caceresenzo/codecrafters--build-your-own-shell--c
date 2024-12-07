@@ -8,6 +8,7 @@
 #define END '\0'
 #define SPACE ' '
 #define SINGLE '\''
+#define DOUBLE '"'
 
 static void argv_grow(
     char ***argv,
@@ -60,6 +61,21 @@ char **argv_parse(const char *line)
                 character = line[index];
 
                 if (character == SINGLE)
+                    break;
+
+                builder[builder_length++] = character;
+            }
+
+            break;
+        }
+
+        case DOUBLE:
+        {
+            for (++index; index < line_length; ++index)
+            {
+                character = line[index];
+
+                if (character == DOUBLE)
                     break;
 
                 builder[builder_length++] = character;
