@@ -37,38 +37,9 @@ bool shell_read(char *buffer, size_t buffer_size)
 	return (true);
 }
 
-void shell_eval(char *line)
+void shell_exec(char **argv, int argc)
 {
-	int argc = 1;
-	for (char *ptr = line; *ptr; ++ptr)
-	{
-		if (isspace(*ptr))
-		{
-			*ptr = '\0';
-			++argc;
-		}
-	}
-
-	char *argv[argc + 1];
-	argv[0] = line;
-	argv[argc] = NULL;
-
-	for (int index = 1; index < argc; ++index)
-	{
-		char *previous = argv[index - 1];
-		size_t offset = strlen(previous) + 1 /* null terminator */;
-
-		// printf("previous=`%s`  offset=%ld\n", previous, offset);
-
-		argv[index] = previous + offset;
-	}
-
-	// for (int index = 0; index <= argc; ++index)
-	// {
-	// 	printf("argv[%d] = `%s`\n", index, argv[index]);
-	// }
-
-	char *program = line;
+	char *program = argv[0];
 
 	builtin_t builtin = builtin_find(program);
 	if (builtin)
@@ -96,6 +67,24 @@ void shell_eval(char *line)
 	}
 
 	printf("%s: command not found\n", program);
+}
+
+void shell_eval(char *line)
+{
+	char **argv = argv_parse(line);
+	int argc;
+
+	for (argc = 0; argv[argc]; ++argc)
+		;
+
+	// for (int index = 0; index <= argc; ++index)
+	// {
+	// 	printf("argv[%d] = `%s`\n", index, argv[index]);
+	// }
+
+	shell_exec(argv, argc);
+
+	argv_free(argv);
 }
 
 int main()
