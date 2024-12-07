@@ -4,11 +4,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #define END '\0'
 #define SPACE ' '
 #define SINGLE '\''
 #define DOUBLE '"'
+#define BACKSLASH '\\'
 
 static void argv_grow(
     char ***argv,
@@ -30,6 +32,26 @@ static void argv_grow(
     *argc += 1;
     *argv = realloc(*argv, (*argc + 1) * sizeof(char *));
     (*argv)[*argc] = NULL;
+}
+
+static void backslash(
+    const char *line,
+    size_t line_length,
+    size_t *index,
+    char *builder,
+    size_t *builder_length,
+    bool in_quote)
+{
+    ++(*index);
+    if (*index >= line_length)
+        return;
+
+    char character = line[*index];
+
+    if (in_quote)
+        builder[(*builder_length)++] = BACKSLASH;
+
+    builder[(*builder_length)++] = character;
 }
 
 char **argv_parse(const char *line)
@@ -78,8 +100,18 @@ char **argv_parse(const char *line)
                 if (character == DOUBLE)
                     break;
 
-                builder[builder_length++] = character;
+                if (character == BACKSLASH)
+                    backslash(line, line_length, &index, builder, &builder_length, true);
+                else
+                    builder[builder_length++] = character;
             }
+
+            break;
+        }
+
+        case BACKSLASH:
+        {
+            backslash(line, line_length, &index, builder, &builder_length, false);
 
             break;
         }
