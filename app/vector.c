@@ -42,6 +42,14 @@ void vector_shrink(vector_t *vector)
     vector_resize(vector, vector->length);
 }
 
+void *vector_get(vector_t *vector, size_t index)
+{
+    if (index >= vector->length)
+        return (NULL);
+
+    return (to_byte_pointer_with_offset(vector, index));
+}
+
 void vector_append(vector_t *vector, void *item)
 {
     if (vector->length == vector->capacity)

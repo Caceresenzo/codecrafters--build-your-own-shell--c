@@ -37,14 +37,14 @@ bool shell_read(char *buffer, size_t buffer_size)
 	return (true);
 }
 
-void shell_exec(char **argv, int argc)
+void shell_exec(char **argv, int argc, io_t io)
 {
 	char *program = argv[0];
 
 	builtin_t builtin = builtin_find(program);
 	if (builtin)
 	{
-		builtin(argc, argv);
+		builtin(argc, argv, io);
 		return;
 	}
 
@@ -56,6 +56,11 @@ void shell_exec(char **argv, int argc)
 			perror("fork");
 		else if (pid == 0)
 		{
+			dup2(io.output, STDOUT_FILENO);
+			dup2(io.error, STDERR_FILENO);
+
+			io_close(&io);
+
 			execvp(path, argv);
 			perror("execvp");
 			exit(1);
@@ -71,20 +76,14 @@ void shell_exec(char **argv, int argc)
 
 void shell_eval(char *line)
 {
-	char **argv = line_parse(line);
-	int argc;
+	parsed_line_t parsed_line = line_parse(line);
 
-	for (argc = 0; argv[argc]; ++argc)
-		;
+	io_t io = io_open(parsed_line.redirects, parsed_line.redirect_count);
+	if (io.valid)
+		shell_exec(parsed_line.argv, parsed_line.argc, io);
 
-	// for (int index = 0; index <= argc; ++index)
-	// {
-	// 	printf("argv[%d] = `%s`\n", index, argv[index]);
-	// }
-
-	shell_exec(argv, argc);
-
-	line_free(argv);
+	io_close(&io);
+	line_free(&parsed_line);
 }
 
 int main()

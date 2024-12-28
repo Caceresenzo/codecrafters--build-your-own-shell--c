@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <ctype.h>
+#include <unistd.h>
 
 #include "iterator.h"
 #include "vector.h"
@@ -14,12 +16,16 @@
 #define SINGLE '\''
 #define DOUBLE '"'
 #define BACKSLASH '\\'
+#define GREATER_THAN '>'
 
 typedef struct
 {
     string_iterator_t iterator;
     vector_t arguments;
+    vector_t redirects;
 } parser_t;
+
+char *parse_next_argument(parser_t *);
 
 static char *build_string(vector_t *builder)
 {
@@ -63,6 +69,32 @@ static void parse_backslash(
     }
 
     vector_append(builder, &character);
+}
+
+static void parse_redirect(
+    parser_t *parser,
+    int file_descriptor)
+{
+    if (file_descriptor != STDOUT_FILENO && file_descriptor != STDERR_FILENO)
+        file_descriptor = -1;
+
+    char character = string_iterator_next(&parser->iterator);
+    if (!character)
+        return;
+
+    bool append = character == GREATER_THAN;
+    if (append)
+        string_iterator_next(&parser->iterator);
+
+    char *path = parse_next_argument(parser);
+
+    redirect_t redirect = {
+        .file_descriptor = file_descriptor,
+        .path = path,
+        .append = append,
+    };
+
+    vector_append(&parser->redirects, &redirect);
 }
 
 char *parse_next_argument(
@@ -116,9 +148,22 @@ char *parse_next_argument(
             break;
         }
 
+        case GREATER_THAN:
+        {
+            parse_redirect(parser, STDOUT_FILENO);
+
+            break;
+        }
+
         default:
         {
-            vector_append(&builder, &character);
+            if (isdigit(character) && string_iterator_peek(iterator) == GREATER_THAN)
+            {
+                string_iterator_next(iterator);
+                parse_redirect(parser, character - '0');
+            }
+            else
+                vector_append(&builder, &character);
 
             break;
         }
@@ -132,11 +177,12 @@ char *parse_next_argument(
     return (NULL);
 }
 
-char **line_parse(const char *line)
+parsed_line_t line_parse(const char *line)
 {
     parser_t parser = {
         .iterator = string_iterator_from(line),
         .arguments = vector_initialize(sizeof(char *)),
+        .redirects = vector_initialize(sizeof(redirect_t)),
     };
 
     string_iterator_first(&parser.iterator);
@@ -148,14 +194,40 @@ char **line_parse(const char *line)
     vector_append(&parser.arguments, &argument);
 
     vector_shrink(&parser.arguments);
+    vector_shrink(&parser.redirects);
 
-    return (parser.arguments.pointer);
+    return ((parsed_line_t){
+        .argv = parser.arguments.pointer,
+        .argc = parser.arguments.length - 1,
+        .redirects = parser.redirects.pointer,
+        .redirect_count = parser.redirects.length,
+    });
 }
 
-void line_free(char **argv)
+void line_free(parsed_line_t *parsed_line)
 {
-    for (size_t index = 0; argv[index]; ++index)
-        free(argv[index]);
+    {
+        char **argv = parsed_line->argv;
 
-    free(argv);
+        for (size_t index = 0; argv[index]; ++index)
+            free(argv[index]);
+
+        free(argv);
+
+        parsed_line->argv = NULL;
+        parsed_line->argc = -1;
+    }
+
+    {
+        redirect_t *redirects = parsed_line->redirects;
+        int redirect_count = parsed_line->redirect_count;
+
+        for (size_t index = 0; index < redirect_count; ++index)
+            free(redirects[index].path);
+
+        free(redirects);
+
+        parsed_line->redirects = NULL;
+        parsed_line->redirect_count = 0;
+    }
 }
