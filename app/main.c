@@ -71,7 +71,7 @@ void shell_exec(char **argv, int argc)
 
 void shell_eval(char *line)
 {
-	char **argv = argv_parse(line);
+	char **argv = line_parse(line);
 	int argc;
 
 	for (argc = 0; argv[argc]; ++argc)
@@ -84,7 +84,7 @@ void shell_eval(char *line)
 
 	shell_exec(argv, argc);
 
-	argv_free(argv);
+	line_free(argv);
 }
 
 int main()

@@ -6,55 +6,48 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include "iterator.h"
+#include "vector.h"
+
 #define END '\0'
 #define SPACE ' '
 #define SINGLE '\''
 #define DOUBLE '"'
 #define BACKSLASH '\\'
 
-static void argv_grow(
-    char ***argv,
-    size_t *argc,
-    char *builder,
-    size_t *builder_length)
+typedef struct
 {
-    if (!*builder)
-        return;
+    string_iterator_t iterator;
+    vector_t arguments;
+} parser_t;
 
-    char *arg = malloc(*builder_length + 1);
-    memcpy(arg, builder, *builder_length + 1);
+static char *build_string(vector_t *builder)
+{
+    char zero = '\0';
+    vector_append(builder, &zero);
 
-    bzero(builder, *builder_length);
-    *builder_length = 0;
+    char *string = strdup(builder->pointer);
+    vector_destroy(builder);
 
-    (*argv)[*argc] = arg;
-
-    *argc += 1;
-    *argv = realloc(*argv, (*argc + 1) * sizeof(char *));
-    (*argv)[*argc] = NULL;
+    return (string);
 }
 
 static char map_backslash_character(char character)
 {
     if (character == DOUBLE || character == BACKSLASH)
         return (character);
-    
+
     return (END);
 }
 
-static void backslash(
-    const char *line,
-    size_t line_length,
-    size_t *index,
-    char *builder,
-    size_t *builder_length,
+static void parse_backslash(
+    string_iterator_t *iterator,
+    vector_t *builder,
     bool in_quote)
 {
-    ++(*index);
-    if (*index >= line_length)
+    char character = string_iterator_next(iterator);
+    if (!character)
         return;
-
-    char character = line[*index];
 
     if (in_quote)
     {
@@ -63,62 +56,54 @@ static void backslash(
         if (mapped != END)
             character = mapped;
         else
-            builder[(*builder_length)++] = BACKSLASH;
+        {
+            char backslash = BACKSLASH;
+            vector_append(builder, &backslash);
+        }
     }
 
-    builder[(*builder_length)++] = character;
+    vector_append(builder, &character);
 }
 
-char **argv_parse(const char *line)
+char *parse_next_argument(
+    parser_t *parser)
 {
-    size_t line_length = strlen(line);
+    string_iterator_t *iterator = &parser->iterator;
 
-    char *builder = calloc(line_length + 1, sizeof(char)); // TODO Grow automatically instead.
-    size_t builder_length = 0;
+    vector_t builder = vector_initialize(sizeof(char));
+    vector_resize(&builder, string_iterator_remaining(iterator) + 1);
 
-    char **argv = calloc(1, sizeof(char *));
-    size_t argc = 0;
-
-    for (size_t index = 0; index < line_length; ++index)
+    for (
+        char character = string_iterator_current(iterator);
+        character;
+        character = string_iterator_next(iterator))
     {
-        char character = line[index];
-
         switch (character)
         {
         case SPACE:
         {
-            argv_grow(&argv, &argc, builder, &builder_length);
+            if (!vector_is_empty(&builder))
+                return (build_string(&builder));
+
             break;
         }
 
         case SINGLE:
         {
-            for (++index; index < line_length; ++index)
-            {
-                character = line[index];
-
-                if (character == SINGLE)
-                    break;
-
-                builder[builder_length++] = character;
-            }
+            while ((character = string_iterator_next(iterator)) && character != SINGLE)
+                vector_append(&builder, &character);
 
             break;
         }
 
         case DOUBLE:
         {
-            for (++index; index < line_length; ++index)
+            while ((character = string_iterator_next(iterator)) && character != DOUBLE)
             {
-                character = line[index];
-
-                if (character == DOUBLE)
-                    break;
-
                 if (character == BACKSLASH)
-                    backslash(line, line_length, &index, builder, &builder_length, true);
+                    parse_backslash(iterator, &builder, true);
                 else
-                    builder[builder_length++] = character;
+                    vector_append(&builder, &character);
             }
 
             break;
@@ -126,27 +111,48 @@ char **argv_parse(const char *line)
 
         case BACKSLASH:
         {
-            backslash(line, line_length, &index, builder, &builder_length, false);
+            parse_backslash(iterator, &builder, false);
 
             break;
         }
 
         default:
         {
-            builder[builder_length++] = character;
+            vector_append(&builder, &character);
 
             break;
         }
         }
     }
 
-    argv_grow(&argv, &argc, builder, &builder_length);
+    if (!vector_is_empty(&builder))
+        return (build_string(&builder));
 
-    free(builder);
-    return (argv);
+    vector_destroy(&builder);
+    return (NULL);
 }
 
-void argv_free(char **argv)
+char **line_parse(const char *line)
+{
+    parser_t parser = {
+        .iterator = string_iterator_from(line),
+        .arguments = vector_initialize(sizeof(char *)),
+    };
+
+    string_iterator_first(&parser.iterator);
+
+    char *argument;
+    while (argument = parse_next_argument(&parser))
+        vector_append(&parser.arguments, &argument);
+
+    vector_append(&parser.arguments, &argument);
+
+    vector_shrink(&parser.arguments);
+
+    return (parser.arguments.pointer);
+}
+
+void line_free(char **argv)
 {
     for (size_t index = 0; argv[index]; ++index)
         free(argv[index]);
