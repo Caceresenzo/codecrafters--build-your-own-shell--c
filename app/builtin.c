@@ -5,65 +5,65 @@
 
 #include "shell.h"
 
-typedef void (*builtin_t)(int, char **);
 typedef struct
 {
 	const char *name;
 	builtin_t function;
 } builtin_entry_t;
 
-void builtin_exit(int argc, char **argv)
+void builtin_exit(int argc, char **argv, io_t io)
 {
 	exit(0);
 
 	(void)argc;
 	(void)argv;
+	(void)io;
 }
 
-void builtin_echo(int argc, char **argv)
+void builtin_echo(int argc, char **argv, io_t io)
 {
 	int last = argc - 1;
 	for (int index = 1; index < argc; ++index)
 	{
-		printf("%s", argv[index]);
+		dprintf(io.output, "%s", argv[index]);
 
 		if (index != last)
-			printf(" ");
+			dprintf(io.output, " ");
 	}
 
-	printf("\n");
+	dprintf(io.output, "\n");
 }
 
-void builtin_type(int argc, char **argv)
+void builtin_type(int argc, char **argv, io_t io)
 {
 	char *program = argv[1];
 
 	builtin_t builtin = builtin_find(program);
 	if (builtin)
 	{
-		printf("%s is a shell builtin\n", program);
+		dprintf(io.output, "%s is a shell builtin\n", program);
 		return;
 	}
 
 	char path[PATH_MAX] = {};
 	if (locate(program, path))
 	{
-		printf("%s is %s\n", program, path);
+		dprintf(io.output, "%s is %s\n", program, path);
 		return;
 	}
 
-	printf("%s: not found\n", program);
+	dprintf(io.output, "%s: not found\n", program);
 }
 
-void builtin_pwd(int argc, char **argv)
+void builtin_pwd(int argc, char **argv, io_t io)
 {
 	char path[PATH_MAX] = {};
 	getcwd(path, sizeof(path));
 
-	printf("%s\n", path);
+	dprintf(io.output, "%s\n", path);
 }
 
-void builtin_cd(int argc, char **argv)
+void builtin_cd(int argc, char **argv, io_t io)
 {
 	char absolute_path[PATH_MAX] = {};
 
@@ -94,7 +94,7 @@ void builtin_cd(int argc, char **argv)
 		return;
 
 	if (chdir(absolute_path) == -1)
-		printf("cd: %s: No such file or directory\n", path);
+		dprintf(io.error, "cd: %s: No such file or directory\n", path);
 }
 
 builtin_entry_t builtin_registry[] = {
