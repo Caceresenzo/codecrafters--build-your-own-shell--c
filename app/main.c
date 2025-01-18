@@ -92,6 +92,9 @@ e_shell_read_result shell_read(vector_t *line)
 
 void shell_exec(char **argv, int argc, io_t io)
 {
+	if (argc == 0)
+		return;
+
 	char *program = argv[0];
 
 	builtin_t builtin = builtin_find(program);
