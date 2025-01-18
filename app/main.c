@@ -6,35 +6,88 @@
 #include <limits.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <termios.h>
 
 #include "shell.h"
+#include "vector.h"
 
-bool shell_read(char *buffer, size_t buffer_size)
+typedef enum
 {
-	while (true)
+	SRR_UNSET,
+	SRR_QUIT,
+	SRR_EMPTY,
+	SRR_CONTENT,
+} e_shell_read_result;
+
+e_shell_read_result shell_read(vector_t *line)
+{
+	vector_clear(line);
+
+	struct termios previous;
+	tcgetattr(STDIN_FILENO, &previous);
+
+	struct termios new = previous;
+	new.c_lflag &= ~(ECHO | ICANON);
+	new.c_cc[VMIN] = 1;
+	new.c_cc[VTIME] = 0;
+	tcsetattr(STDIN_FILENO, TCSANOW, &new);
+
+	printf("$ ");
+	fflush(stdout);
+
+	e_shell_read_result result = SRR_UNSET;
+
+	while (result == SRR_UNSET)
 	{
-		printf("$ ");
-		fflush(stdout);
-
-		memset(buffer, '\0', buffer_size);
-		fgets(buffer, buffer_size, stdin);
-
-		size_t length = strlen(buffer);
-		if (length == 0)
-			return (false);
-
-		if (buffer[length - 1] == '\n')
+		int character_value = getchar();
+		if (character_value == -1)
 		{
-			buffer[--length] = '\0';
-
-			if (length == 0)
-				continue;
+			perror("getchar");
+			result = SRR_EMPTY;
+			break;
 		}
 
-		break;
+		char character = character_value;
+
+		if (character == 0x4)
+		{
+			if (vector_is_empty(line))
+			{
+				result = SRR_QUIT;
+				break;
+			}
+		}
+		else if (character == '\n')
+		{
+			write(STDOUT_FILENO, "\n", 1);
+			result = vector_is_empty(line) ? SRR_EMPTY : SRR_CONTENT;
+			break;
+		}
+		else if (character == 0x1b)
+		{
+			getchar(); // '['
+			getchar(); // 'A' or 'B' or 'C' or 'D'
+		}
+		else if (character == 0x7f)
+		{
+			if (vector_is_empty(line))
+				continue;
+
+			write(STDOUT_FILENO, "\b \b", 3);
+			vector_pop(line);
+		}
+		else
+		{
+			write(STDOUT_FILENO, &character, 1);
+			vector_append(line, &character);
+		}
 	}
 
-	return (true);
+	int zero = 0;
+	vector_append(line, &zero);
+
+	tcsetattr(STDIN_FILENO, TCSANOW, &previous);
+	return (result);
 }
 
 void shell_exec(char **argv, int argc, io_t io)
@@ -88,15 +141,22 @@ void shell_eval(char *line)
 
 int main()
 {
-	char line[100];
+	vector_t line = vector_initialize(sizeof(char));
+	vector_resize(&line, 100);
 
 	while (true)
 	{
-		if (!shell_read(line, sizeof(line)))
+		e_shell_read_result result = shell_read(&line);
+
+		if (result == SRR_QUIT)
 			break;
 
-		shell_eval(line);
+		if (result == SRR_EMPTY)
+			continue;
+
+		shell_eval(line.pointer);
 	}
 
+	vector_destroy(&line);
 	return (EXIT_SUCCESS);
 }

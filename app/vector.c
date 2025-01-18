@@ -6,7 +6,7 @@
 
 static char *to_byte_pointer_with_offset(vector_t *vector, size_t index)
 {
-    return (((char*) vector->pointer) + (index * vector->item_size));
+    return (((char *)vector->pointer) + (index * vector->item_size));
 }
 
 vector_t vector_initialize(size_t item_size)
@@ -62,4 +62,20 @@ void vector_append(vector_t *vector, void *item)
 bool vector_is_empty(const vector_t *vector)
 {
     return (vector->length == 0);
+}
+
+void vector_clear(vector_t *vector)
+{
+    vector->length = 0;
+}
+
+bool vector_pop(vector_t *vector)
+{
+    if (vector->length > 0)
+    {
+        vector->length -= 1;
+        return (true);
+    }
+
+    return (false);
 }
