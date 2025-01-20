@@ -2,8 +2,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 #include "shell.h"
+
+void bell()
+{
+    write(STDOUT_FILENO, "\a", 1);
+}
 
 static void commit(vector_t *line, char *candidate)
 {
@@ -17,24 +25,87 @@ static void commit(vector_t *line, char *candidate)
     vector_append(line, &space);
 }
 
-void bell()
+static void collect_builtins(vector_t *candidates, vector_t *line)
 {
-    write(STDOUT_FILENO, "\a", 1);
+    for (builtin_entry_t *entry = g_builtins; entry->name; ++entry)
+    {
+        if (strncmp(line->pointer, entry->name, line->length) == 0)
+        {
+            char *candidate = strdup(entry->name + line->length);
+            vector_append(candidates, &candidate);
+        }
+    }
+}
+
+static void collect_executables(vector_t *candidates, vector_t *line)
+{
+    struct stat path_stat;
+
+    const char *paths = getenv("PATH");
+    if (!paths)
+        return;
+
+    const char *directory_iterator = paths;
+    while (true)
+    {
+        const char *directory = directory_iterator;
+
+        size_t directory_length = strlen_or(directory, ':');
+        directory_iterator += directory_length + 1;
+
+        bool last = directory[directory_length] == '\0';
+
+        char path[PATH_MAX] = {};
+        memcpy(path, directory, directory_length);
+        path[directory_length] = '/';
+
+        if (stat(path, &path_stat) == -1)
+            continue;
+
+        if (!S_ISDIR(path_stat.st_mode))
+            continue;
+
+        DIR *dir = opendir(path);
+        struct dirent *entity;
+        while ((entity = readdir(dir)) != NULL)
+        {
+            if (strncmp(line->pointer, entity->d_name, line->length) != 0)
+                continue;
+
+            memcpy(path, directory, directory_length);
+            path[directory_length] = '/';
+            strcat(path + directory_length + 1, entity->d_name);
+
+            if (stat(path, &path_stat) == -1)
+                continue;
+
+            if (!S_ISREG(path_stat.st_mode))
+                continue;
+
+            if (access(path, F_OK | X_OK) != 0)
+                continue;
+
+            char *candidate = entity->d_name + line->length;
+            if (vector_contains(candidates, &candidate, string_compare))
+                continue;
+
+            candidate = strdup(candidate);
+            vector_append(candidates, &candidate);
+        }
+
+        closedir(dir);
+
+        if (last)
+            break;
+    }
 }
 
 e_autocomplete_result autocomplete(vector_t *line)
 {
     vector_t candidates = vector_initialize(sizeof(char *));
 
-    for (builtin_entry_t *entry = g_builtins; entry->name; ++entry)
-    {
-        if (strncmp(line->pointer, entry->name, line->length) == 0)
-        {
-            char *candidate = strdup(entry->name + line->length);
-
-            vector_append(&candidates, &candidate);
-        }
-    }
+    collect_builtins(&candidates, line);
+    collect_executables(&candidates, line);
 
     e_autocomplete_result result;
 

@@ -93,3 +93,21 @@ void vector_add_all_iterate(vector_t *vector, void *raw_item, size_t count)
         --count;
     }
 }
+
+bool vector_contains(const vector_t *vector, void *item, int (*comparator)(void *, void *))
+{
+    for (size_t index = 0; index < vector->length; ++index)
+    {
+        void *right = vector_get((vector_t *)vector, index);
+
+        if (comparator(item, right) == 0)
+            return (true);
+    }
+
+    return (false);
+}
+
+int string_compare(void *left, void *right)
+{
+    return (strcmp(*((char **)left), *((char **)right)));
+}
