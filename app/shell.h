@@ -58,6 +58,7 @@ typedef enum
     AR_MORE,
 } e_autocomplete_result;
 
+void bell();
 e_autocomplete_result autocomplete(vector_t *line);
 
 #endif

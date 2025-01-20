@@ -64,7 +64,10 @@ e_shell_read_result shell_read(vector_t *line)
 		}
 		else if (character == '\t')
 		{
-			autocomplete(line);
+			e_autocomplete_result autocomplete_result = autocomplete(line);
+
+			if (autocomplete_result == AR_NONE)
+				bell();
 		}
 		else if (character == 0x1b)
 		{

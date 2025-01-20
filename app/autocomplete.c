@@ -17,6 +17,11 @@ static void commit(vector_t *line, char *candidate)
     vector_append(line, &space);
 }
 
+void bell()
+{
+    write(STDOUT_FILENO, "\a", 1);
+}
+
 e_autocomplete_result autocomplete(vector_t *line)
 {
     vector_t candidates = vector_initialize(sizeof(char *));
