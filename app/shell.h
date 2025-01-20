@@ -5,13 +5,24 @@
 #include <limits.h>
 #include <stddef.h>
 
-typedef struct {
+#include "vector.h"
+
+typedef struct
+{
     bool valid;
     int output;
     int error;
 } io_t;
 
 typedef void (*builtin_t)(int, char **, io_t);
+
+typedef struct
+{
+    const char *name;
+    builtin_t function;
+} builtin_entry_t;
+
+extern builtin_entry_t g_builtins[];
 
 builtin_t builtin_find(const char *name);
 
@@ -39,5 +50,14 @@ void line_free(parsed_line_t *parsed_line);
 
 io_t io_open(redirect_t *redirects, int redirect_count);
 void io_close(io_t *io);
+
+typedef enum
+{
+    AR_NONE,
+    AR_FOUND,
+    AR_MORE,
+} e_autocomplete_result;
+
+e_autocomplete_result autocomplete(vector_t *line);
 
 #endif

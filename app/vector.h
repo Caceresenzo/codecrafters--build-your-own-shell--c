@@ -21,5 +21,6 @@ void vector_append(vector_t *vector, void *item);
 bool vector_is_empty(const vector_t *vector);
 void vector_clear(vector_t *vector);
 bool vector_pop(vector_t *vector);
+void vector_add_all_iterate(vector_t *vector, void *item, size_t count);
 
 #endif

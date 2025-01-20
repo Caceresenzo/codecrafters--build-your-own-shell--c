@@ -5,12 +5,6 @@
 
 #include "shell.h"
 
-typedef struct
-{
-	const char *name;
-	builtin_t function;
-} builtin_entry_t;
-
 void builtin_exit(int argc, char **argv, io_t io)
 {
 	exit(0);
@@ -97,7 +91,7 @@ void builtin_cd(int argc, char **argv, io_t io)
 		dprintf(io.error, "cd: %s: No such file or directory\n", path);
 }
 
-builtin_entry_t builtin_registry[] = {
+builtin_entry_t g_builtins[] = {
 	{"exit", builtin_exit},
 	{"echo", builtin_echo},
 	{"type", builtin_type},
@@ -108,7 +102,7 @@ builtin_entry_t builtin_registry[] = {
 
 builtin_t builtin_find(const char *name)
 {
-	for (builtin_entry_t *entry = builtin_registry; entry->name; ++entry)
+	for (builtin_entry_t *entry = g_builtins; entry->name; ++entry)
 	{
 		if (strcmp(entry->name, name) == 0)
 			return (entry->function);

@@ -36,7 +36,6 @@ e_shell_read_result shell_read(vector_t *line)
 	fflush(stdout);
 
 	e_shell_read_result result = SRR_UNSET;
-
 	while (result == SRR_UNSET)
 	{
 		int character_value = getchar();
@@ -62,6 +61,10 @@ e_shell_read_result shell_read(vector_t *line)
 			write(STDOUT_FILENO, "\n", 1);
 			result = vector_is_empty(line) ? SRR_EMPTY : SRR_CONTENT;
 			break;
+		}
+		else if (character == '\t')
+		{
+			autocomplete(line);
 		}
 		else if (character == 0x1b)
 		{

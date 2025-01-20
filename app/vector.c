@@ -3,6 +3,8 @@
 #include <string.h>
 #include <sys/param.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
 
 static char *to_byte_pointer_with_offset(vector_t *vector, size_t index)
 {
@@ -78,4 +80,16 @@ bool vector_pop(vector_t *vector)
     }
 
     return (false);
+}
+
+void vector_add_all_iterate(vector_t *vector, void *raw_item, size_t count)
+{
+    char *item = raw_item;
+
+    while (count)
+    {
+        vector_append(vector, item);
+        item += vector->item_size;
+        --count;
+    }
 }
