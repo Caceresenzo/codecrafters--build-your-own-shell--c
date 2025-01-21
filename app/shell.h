@@ -26,9 +26,9 @@ extern builtin_entry_t g_builtins[];
 
 builtin_t builtin_find(const char *name);
 
-bool locate(const char *program, char output[static PATH_MAX]);
-
 size_t strlen_or(const char *str, char alternative_end);
+bool locate(const char *program, char output[static PATH_MAX]);
+void write_string(const char *string);
 
 typedef struct
 {
@@ -59,6 +59,8 @@ typedef enum
 } e_autocomplete_result;
 
 void bell();
-e_autocomplete_result autocomplete(vector_t *line);
+
+void shell_prompt();
+e_autocomplete_result autocomplete(vector_t *line, bool bell_rung);
 
 #endif

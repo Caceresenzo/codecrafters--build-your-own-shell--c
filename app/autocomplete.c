@@ -74,6 +74,7 @@ static void collect_executables(vector_t *candidates, vector_t *line)
 
             memcpy(path, directory, directory_length);
             path[directory_length] = '/';
+            path[directory_length + 1] = '\0';
             strcat(path + directory_length + 1, entity->d_name);
 
             if (stat(path, &path_stat) == -1)
@@ -100,12 +101,14 @@ static void collect_executables(vector_t *candidates, vector_t *line)
     }
 }
 
-e_autocomplete_result autocomplete(vector_t *line)
+e_autocomplete_result autocomplete(vector_t *line, bool bell_rung)
 {
     vector_t candidates = vector_initialize(sizeof(char *));
 
     collect_builtins(&candidates, line);
     collect_executables(&candidates, line);
+
+    vector_sort(&candidates, string_compare);
 
     e_autocomplete_result result;
 
@@ -123,8 +126,26 @@ e_autocomplete_result autocomplete(vector_t *line)
     }
     else
     {
-        printf("TODO multiple candidates\n");
-        result = AR_NONE;
+        result = AR_MORE;
+
+        if (bell_rung)
+        {
+            write_string("\n");
+
+            for (size_t index = 0; index < candidates.length; ++index)
+            {
+                if (index != 0)
+                    write_string("  ");
+
+                write_string(line->pointer);
+                char **candidate = vector_get(&candidates, index);
+                write_string(*candidate);
+            }
+
+            write_string("\n");
+            shell_prompt();
+            write_string(line->pointer);
+        }
     }
 
     for (size_t index = 0; index < candidates.length; ++index)

@@ -11,6 +11,11 @@
 #include "shell.h"
 #include "vector.h"
 
+void shell_prompt()
+{
+	write_string("$ ");
+}
+
 typedef enum
 {
 	SRR_UNSET,
@@ -32,8 +37,9 @@ e_shell_read_result shell_read(vector_t *line)
 	new.c_cc[VTIME] = 0;
 	tcsetattr(STDIN_FILENO, TCSANOW, &new);
 
-	printf("$ ");
-	fflush(stdout);
+	shell_prompt();
+
+	bool bell_rung = false;
 
 	e_shell_read_result result = SRR_UNSET;
 	while (result == SRR_UNSET)
@@ -64,10 +70,20 @@ e_shell_read_result shell_read(vector_t *line)
 		}
 		else if (character == '\t')
 		{
-			e_autocomplete_result autocomplete_result = autocomplete(line);
+			e_autocomplete_result autocomplete_result = autocomplete(line, bell_rung);
 
 			if (autocomplete_result == AR_NONE)
+			{
 				bell();
+				bell_rung = false;
+			}
+			else if (autocomplete_result == AR_FOUND)
+				bell_rung = false;
+			else if (autocomplete_result == AR_MORE)
+			{
+				bell();
+				bell_rung = true;
+			}
 		}
 		else if (character == 0x1b)
 		{

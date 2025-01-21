@@ -48,3 +48,8 @@ bool locate(const char *program, char output[static PATH_MAX])
 
 	return (false);
 }
+
+void write_string(const char *string)
+{
+	write(STDOUT_FILENO, string, strlen(string));
+}
