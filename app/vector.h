@@ -26,5 +26,6 @@ bool vector_contains(const vector_t *vector, const void *item, int (*comparator)
 void vector_sort(const vector_t *vector, int (*comparator)(const void *, const void *));
 
 int string_compare(const void *left, const void *right);
+int string_compare_short_first(const void *left, const void *right);
 
 #endif

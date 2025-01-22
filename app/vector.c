@@ -119,3 +119,17 @@ int string_compare(const void *left, const void *right)
 {
     return (strcmp(*((char **)left), *((char **)right)));
 }
+
+int string_compare_short_first(const void *left_item, const void *right_item)
+{
+    char *left = *((char **)left_item);
+    char *right = *((char **)right_item);
+
+    size_t left_length = strlen(left);
+    size_t right_length = strlen(right);
+
+    if (left_length == right_length)
+        return (memcmp(left, right, left_length));
+
+    return (left_length - right_length);
+}

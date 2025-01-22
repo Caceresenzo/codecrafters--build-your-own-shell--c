@@ -13,12 +13,15 @@ void bell()
     write(STDOUT_FILENO, "\a", 1);
 }
 
-static void commit(vector_t *line, char *candidate)
+static void commit(vector_t *line, char *candidate, bool has_more)
 {
     size_t length = strlen(candidate);
 
     write(STDOUT_FILENO, candidate, length);
     vector_add_all_iterate(line, candidate, length);
+
+    if (has_more)
+        return;
 
     char space = ' ';
     write(STDOUT_FILENO, &space, 1);
@@ -101,6 +104,47 @@ static void collect_executables(vector_t *candidates, vector_t *line)
     }
 }
 
+static char *find_shared_prefix(vector_t *candidates)
+{
+    const char *first = *((char **)vector_get(candidates, 0));
+
+    size_t first_length = strlen(first);
+    if (first_length == 0)
+        return (NULL);
+
+    size_t end = 1;
+    for (; end < first_length; ++end)
+    {
+        bool one_is_not_matching = false;
+
+        for (size_t index = 1; index < candidates->length; ++index)
+        {
+            char *other = *((char **)vector_get(candidates, index));
+
+            if (strncmp(first, other, end) != 0)
+            {
+                one_is_not_matching = true;
+                break;
+            }
+        }
+
+        if (one_is_not_matching)
+        {
+            --end;
+            break;
+        }
+    }
+
+    if (end == 0)
+        return (NULL);
+
+    char *prefix = malloc(end + 1);
+    memcpy(prefix, first, end);
+    prefix[end] = '\0';
+
+    return (prefix);
+}
+
 e_autocomplete_result autocomplete(vector_t *line, bool bell_rung)
 {
     vector_t candidates = vector_initialize(sizeof(char *));
@@ -108,7 +152,7 @@ e_autocomplete_result autocomplete(vector_t *line, bool bell_rung)
     collect_builtins(&candidates, line);
     collect_executables(&candidates, line);
 
-    vector_sort(&candidates, string_compare);
+    vector_sort(&candidates, string_compare_short_first);
 
     e_autocomplete_result result;
 
@@ -122,29 +166,41 @@ e_autocomplete_result autocomplete(vector_t *line, bool bell_rung)
         result = AR_FOUND;
 
         char **candidate = vector_get(&candidates, 0);
-        commit(line, *candidate);
+        commit(line, *candidate, false);
     }
     else
     {
-        result = AR_MORE;
-
-        if (bell_rung)
+        char *prefix = find_shared_prefix(&candidates);
+        if (prefix)
         {
-            write_string("\n");
+            result = AR_FOUND;
 
-            for (size_t index = 0; index < candidates.length; ++index)
+            commit(line, prefix, true);
+
+            free(prefix);
+        }
+        else
+        {
+            result = AR_MORE;
+
+            if (bell_rung)
             {
-                if (index != 0)
-                    write_string("  ");
+                write_string("\n");
 
+                for (size_t index = 0; index < candidates.length; ++index)
+                {
+                    if (index != 0)
+                        write_string("  ");
+
+                    write_string_n(line->pointer, line->length);
+                    char **candidate = vector_get(&candidates, index);
+                    write_string(*candidate);
+                }
+
+                write_string("\n");
+                shell_prompt();
                 write_string_n(line->pointer, line->length);
-                char **candidate = vector_get(&candidates, index);
-                write_string(*candidate);
             }
-
-            write_string("\n");
-            shell_prompt();
-            write_string_n(line->pointer, line->length);
         }
     }
 
