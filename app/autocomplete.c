@@ -137,14 +137,14 @@ e_autocomplete_result autocomplete(vector_t *line, bool bell_rung)
                 if (index != 0)
                     write_string("  ");
 
-                write_string(line->pointer);
+                write_string_n(line->pointer, line->length);
                 char **candidate = vector_get(&candidates, index);
                 write_string(*candidate);
             }
 
             write_string("\n");
             shell_prompt();
-            write_string(line->pointer);
+            write_string_n(line->pointer, line->length);
         }
     }
 

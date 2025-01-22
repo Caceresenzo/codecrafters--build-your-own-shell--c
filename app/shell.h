@@ -29,6 +29,7 @@ builtin_t builtin_find(const char *name);
 size_t strlen_or(const char *str, char alternative_end);
 bool locate(const char *program, char output[static PATH_MAX]);
 void write_string(const char *string);
+void write_string_n(const char *string, size_t length);
 
 typedef struct
 {

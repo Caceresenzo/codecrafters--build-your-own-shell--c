@@ -51,5 +51,10 @@ bool locate(const char *program, char output[static PATH_MAX])
 
 void write_string(const char *string)
 {
-	write(STDOUT_FILENO, string, strlen(string));
+	write_string_n(string, strlen(string));
+}
+
+void write_string_n(const char *string, size_t length)
+{
+	write(STDOUT_FILENO, string, length);
 }
