@@ -17,10 +17,12 @@
 #define DOUBLE '"'
 #define BACKSLASH '\\'
 #define GREATER_THAN '>'
+#define PIPE '|'
 
 typedef struct
 {
     string_iterator_t iterator;
+    vector_t commands;
     vector_t arguments;
     vector_t redirects;
 } parser_t;
@@ -97,6 +99,28 @@ static void parse_redirect(
     vector_append(&parser->redirects, &redirect);
 }
 
+static void parse_pipe(
+    parser_t *parser)
+{
+    char *null = NULL;
+    vector_append(&parser->arguments, &null);
+
+    vector_shrink(&parser->arguments);
+    vector_shrink(&parser->redirects);
+
+    parsed_line_t parsed_line = {
+        .argv = parser->arguments.pointer,
+        .argc = parser->arguments.length - 1,
+        .redirects = parser->redirects.pointer,
+        .redirect_count = parser->redirects.length,
+    };
+
+    vector_append(&parser->commands, &parsed_line);
+
+    parser->arguments = vector_initialize(sizeof(char *));
+    parser->redirects = vector_initialize(sizeof(redirect_t));
+}
+
 char *parse_next_argument(
     parser_t *parser)
 {
@@ -155,6 +179,13 @@ char *parse_next_argument(
             break;
         }
 
+        case PIPE:
+        {
+            parse_pipe(parser);
+
+            break;
+        }
+
         default:
         {
             if (isdigit(character) && string_iterator_peek(iterator) == GREATER_THAN)
@@ -177,10 +208,11 @@ char *parse_next_argument(
     return (NULL);
 }
 
-parsed_line_t line_parse(const char *line)
+vector_t line_parse(const char *line)
 {
     parser_t parser = {
         .iterator = string_iterator_from(line),
+        .commands = vector_initialize(sizeof(parsed_line_t)),
         .arguments = vector_initialize(sizeof(char *)),
         .redirects = vector_initialize(sizeof(redirect_t)),
     };
@@ -190,18 +222,14 @@ parsed_line_t line_parse(const char *line)
     char *argument;
     while (argument = parse_next_argument(&parser))
         vector_append(&parser.arguments, &argument);
+    
+    if (!vector_is_empty(&parser.arguments))
+        parse_pipe(&parser);
 
-    vector_append(&parser.arguments, &argument);
+    vector_destroy(&parser.arguments);
+    vector_destroy(&parser.redirects);
 
-    vector_shrink(&parser.arguments);
-    vector_shrink(&parser.redirects);
-
-    return ((parsed_line_t){
-        .argv = parser.arguments.pointer,
-        .argc = parser.arguments.length - 1,
-        .redirects = parser.redirects.pointer,
-        .redirect_count = parser.redirects.length,
-    });
+    return parser.commands;
 }
 
 void line_free(parsed_line_t *parsed_line)

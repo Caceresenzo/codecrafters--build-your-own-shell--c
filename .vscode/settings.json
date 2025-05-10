@@ -1,0 +1,25 @@
+{
+    "files.associations": {
+        "ctype.h": "c",
+        "stdbool.h": "c",
+        "shell.h": "c",
+        "limits.h": "c",
+        "stdlib.h": "c",
+        "stdio.h": "c",
+        "stddef.h": "c",
+        "xstring": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "xutility": "c",
+        "string.h": "c",
+        "vector.h": "c",
+        "iterator.h": "c",
+        "xmemory": "c",
+        "compare": "c",
+        "cstddef": "c",
+        "limits": "c",
+        "type_traits": "c",
+        "stat.h": "c",
+        "errno.h": "c"
+    }
+}
