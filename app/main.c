@@ -154,14 +154,23 @@ void shell_exec(char **argv, int argc, io_t io)
 
 void shell_eval(char *line)
 {
-	parsed_line_t parsed_line = line_parse(line);
+	vector_t commands = line_parse(line);
 
-	io_t io = io_open(parsed_line.redirects, parsed_line.redirect_count);
-	if (io.valid)
-		shell_exec(parsed_line.argv, parsed_line.argc, io);
+	if (commands.length == 1)
+	{
+		parsed_line_t *parsed_line = vector_get(&commands, 0);
 
-	io_close(&io);
-	line_free(&parsed_line);
+		io_t io = io_open(parsed_line->redirects, parsed_line->redirect_count);
+		if (io.valid)
+			shell_exec(parsed_line->argv, parsed_line->argc, io);
+
+		io_close(&io);
+		line_free(parsed_line);
+	}
+	else
+		pipeline(commands);
+
+	vector_destroy(&commands);
 }
 
 int main()

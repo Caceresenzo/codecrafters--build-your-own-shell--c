@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <stddef.h>
+#include <unistd.h>
 
 #include "vector.h"
 
@@ -46,7 +47,7 @@ typedef struct
     size_t redirect_count;
 } parsed_line_t;
 
-parsed_line_t line_parse(const char *line);
+vector_t line_parse(const char *line);
 void line_free(parsed_line_t *parsed_line);
 
 io_t io_open(redirect_t *redirects, int redirect_count);
@@ -63,5 +64,7 @@ void bell();
 
 void shell_prompt();
 e_autocomplete_result autocomplete(vector_t *line, bool bell_rung);
+
+pid_t pipeline(vector_t commands);
 
 #endif
