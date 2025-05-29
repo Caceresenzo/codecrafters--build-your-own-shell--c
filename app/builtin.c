@@ -93,6 +93,14 @@ void builtin_cd(int argc, char **argv, io_t io)
 
 void builtin_history(int argc, char **argv, io_t io)
 {
+	(void)argc;
+	(void)argv;
+
+	for (size_t index = 0; index < history_size(); ++index)
+	{
+		const char *line = history_get(index);
+		dprintf(io.output, "%5zu  %s\n", index + 1, line);
+	}
 }
 
 builtin_entry_t g_builtins[] = {
