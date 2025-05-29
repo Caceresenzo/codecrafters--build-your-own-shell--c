@@ -67,4 +67,10 @@ e_autocomplete_result autocomplete(vector_t *line, bool bell_rung);
 
 pid_t pipeline(vector_t commands);
 
+void history_initialize();
+void history_destroy();
+void history_add(const char *line);
+size_t history_size();
+const char *history_get(size_t index);
+
 #endif

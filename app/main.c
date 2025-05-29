@@ -154,6 +154,8 @@ void shell_exec(char **argv, int argc, io_t io)
 
 void shell_eval(char *line)
 {
+	history_add(line);
+
 	vector_t commands = line_parse(line);
 
 	if (commands.length == 1)
@@ -175,6 +177,8 @@ void shell_eval(char *line)
 
 int main()
 {
+	history_initialize();
+
 	vector_t line = vector_initialize(sizeof(char));
 	vector_resize(&line, 100);
 
@@ -192,5 +196,7 @@ int main()
 	}
 
 	vector_destroy(&line);
+
+	history_destroy();
 	return (EXIT_SUCCESS);
 }
