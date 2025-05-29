@@ -91,12 +91,17 @@ void builtin_cd(int argc, char **argv, io_t io)
 		dprintf(io.error, "cd: %s: No such file or directory\n", path);
 }
 
+void builtin_history(int argc, char **argv, io_t io)
+{
+}
+
 builtin_entry_t g_builtins[] = {
 	{"exit", builtin_exit},
 	{"echo", builtin_echo},
 	{"type", builtin_type},
 	{"pwd", builtin_pwd},
 	{"cd", builtin_cd},
+	{"history", builtin_history},
 	{},
 };
 
