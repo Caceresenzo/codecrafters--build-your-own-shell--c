@@ -124,6 +124,15 @@ e_shell_read_result shell_read(vector_t *line)
 				history_position--;
 				change_line(line, history_get(history_position));
 			}
+			else if (direction == DOWN && history_position < history_length)
+			{
+				history_position++;
+
+				if (history_position == history_length)
+					change_line(line, "");
+				else
+					change_line(line, history_get(history_position));
+			}
 		}
 		else if (character == 0x7f)
 		{
