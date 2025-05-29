@@ -52,7 +52,7 @@ void *vector_get(vector_t *vector, size_t index)
     return (to_byte_pointer_with_offset(vector, index));
 }
 
-void vector_append(vector_t *vector, void *item)
+void vector_append(vector_t *vector, const void *item)
 {
     if (vector->length == vector->capacity)
         vector_resize(vector, vector->capacity + 20); // TODO Magic number
@@ -82,9 +82,9 @@ bool vector_pop(vector_t *vector)
     return (false);
 }
 
-void vector_add_all_iterate(vector_t *vector, void *raw_item, size_t count)
+void vector_add_all_iterate(vector_t *vector, const void *raw_item, size_t count)
 {
-    char *item = raw_item;
+    const char *item = raw_item;
 
     while (count)
     {

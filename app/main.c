@@ -16,6 +16,32 @@ void shell_prompt()
 	write_string("$ ");
 }
 
+#define UP 'A'
+#define DOWN 'B'
+
+void change_line(vector_t *line, const char *new_line)
+{
+	size_t length = line->length;
+
+	char *backspaces = malloc(length);
+	memset(backspaces, '\b', length);
+	char *spaces = malloc(length);
+	memset(spaces, ' ', length);
+
+	write(STDOUT_FILENO, backspaces, length);
+	write(STDOUT_FILENO, spaces, length);
+	write(STDOUT_FILENO, backspaces, length);
+
+	free(backspaces);
+	free(spaces);
+
+	size_t new_length = strlen(new_line);
+	write(STDOUT_FILENO, new_line, new_length);
+
+	vector_clear(line);
+	vector_add_all_iterate(line, new_line, new_length);
+}
+
 typedef enum
 {
 	SRR_UNSET,
@@ -36,6 +62,9 @@ e_shell_read_result shell_read(vector_t *line)
 	new.c_cc[VMIN] = 1;
 	new.c_cc[VTIME] = 0;
 	tcsetattr(STDIN_FILENO, TCSANOW, &new);
+
+	size_t history_length = history_size();
+	size_t history_position = history_length;
 
 	shell_prompt();
 
@@ -88,7 +117,13 @@ e_shell_read_result shell_read(vector_t *line)
 		else if (character == 0x1b)
 		{
 			getchar(); // '['
-			getchar(); // 'A' or 'B' or 'C' or 'D'
+
+			char direction = getchar();
+			if (direction == UP && history_position != 0)
+			{
+				history_position--;
+				change_line(line, history_get(history_position));
+			}
 		}
 		else if (character == 0x7f)
 		{
