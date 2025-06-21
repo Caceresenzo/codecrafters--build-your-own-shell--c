@@ -120,6 +120,12 @@ void builtin_history(int argc, char **argv, io_t io)
 			return;
 		}
 
+		if (strcmp(first, "-a") == 0)
+		{
+			history_append(argv[2]);
+			return;
+		}
+
 		ssize_t size = history_size();
 		ssize_t start = size - atoi(argv[1]);
 

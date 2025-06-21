@@ -74,5 +74,6 @@ size_t history_size();
 const char *history_get(size_t index);
 bool history_read(const char *path);
 bool history_write(const char *path);
+bool history_append(const char *path);
 
 #endif
