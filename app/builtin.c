@@ -114,6 +114,12 @@ void builtin_history(int argc, char **argv, io_t io)
 			return;
 		}
 
+		if (strcmp(first, "-w") == 0)
+		{
+			history_write(argv[2]);
+			return;
+		}
+
 		ssize_t size = history_size();
 		ssize_t start = size - atoi(argv[1]);
 

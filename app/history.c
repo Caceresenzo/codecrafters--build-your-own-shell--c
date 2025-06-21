@@ -78,3 +78,21 @@ bool history_read(const char *path)
 
     return (true);
 }
+
+bool history_write(const char *path)
+{
+    FILE *file = fopen(path, "w");
+    if (!file)
+        return (false);
+
+    size_t size = history_size();
+    for (size_t index = 0; index < size; ++index)
+    {
+        const char *line = history_get(index);
+        fprintf(file, "%s\n", *line);
+    }
+
+    fclose(file);
+
+    return (true);
+}
