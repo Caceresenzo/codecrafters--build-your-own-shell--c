@@ -25,6 +25,10 @@ void history_initialize()
 
 void history_destroy()
 {
+    const char *history_file = history_get_file();
+    if (history_file)
+        history_write(history_file);
+
     for (size_t index = 0; index < g_history.length; ++index)
     {
         char **line = vector_get(&g_history, index);

@@ -15,7 +15,13 @@ typedef struct
     int error;
 } io_t;
 
-typedef void (*builtin_t)(int, char **, io_t);
+typedef struct command_result_s
+{
+    int exit_code;
+    bool exit_shell;
+} command_result_t;
+
+typedef command_result_t (*builtin_t)(int, char **, io_t);
 
 typedef struct
 {

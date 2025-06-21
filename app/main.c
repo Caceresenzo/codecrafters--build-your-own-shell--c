@@ -156,19 +156,19 @@ e_shell_read_result shell_read(vector_t *line)
 	return (result);
 }
 
-void shell_exec(char **argv, int argc, io_t io)
+command_result_t shell_exec(char **argv, int argc, io_t io)
 {
 	if (argc == 0)
-		return;
+		return ((command_result_t){
+			.exit_code = 0,
+			.exit_shell = false,
+		});
 
 	char *program = argv[0];
 
 	builtin_t builtin = builtin_find(program);
 	if (builtin)
-	{
-		builtin(argc, argv, io);
-		return;
-	}
+		return (builtin(argc, argv, io));
 
 	char path[PATH_MAX] = {};
 	if (locate(program, path))
@@ -190,13 +190,20 @@ void shell_exec(char **argv, int argc, io_t io)
 		else
 			waitpid(pid, NULL, 0);
 
-		return;
+		return ((command_result_t){
+			.exit_code = 0,
+			.exit_shell = false,
+		});
 	}
 
 	printf("%s: command not found\n", program);
+	return ((command_result_t){
+		.exit_code = 127,
+		.exit_shell = false,
+	});
 }
 
-void shell_eval(char *line)
+command_result_t shell_eval(char *line)
 {
 	history_add(line);
 
@@ -205,18 +212,31 @@ void shell_eval(char *line)
 	if (commands.length == 1)
 	{
 		parsed_line_t *parsed_line = vector_get(&commands, 0);
+		command_result_t result = {
+			.exit_code = 1,
+			.exit_shell = false,
+		};
 
 		io_t io = io_open(parsed_line->redirects, parsed_line->redirect_count);
 		if (io.valid)
-			shell_exec(parsed_line->argv, parsed_line->argc, io);
+			result = shell_exec(parsed_line->argv, parsed_line->argc, io);
 
 		io_close(&io);
 		line_free(parsed_line);
+		vector_destroy(&commands);
+
+		return (result);
 	}
 	else
+	{
 		pipeline(commands);
+		vector_destroy(&commands);
 
-	vector_destroy(&commands);
+		return ((command_result_t){
+			.exit_code = 0,
+			.exit_shell = false,
+		});
+	}
 }
 
 int main()
@@ -225,6 +245,8 @@ int main()
 
 	vector_t line = vector_initialize(sizeof(char));
 	vector_resize(&line, 100);
+
+	int shell_exit_code = EXIT_SUCCESS;
 
 	while (true)
 	{
@@ -236,11 +258,16 @@ int main()
 		if (result == SRR_EMPTY)
 			continue;
 
-		shell_eval(line.pointer);
+		command_result_t result = shell_eval(line.pointer);
+		if (result.exit_shell)
+		{
+			shell_exit_code = result.exit_code;
+			break;
+		}
 	}
 
 	vector_destroy(&line);
 
 	history_destroy();
-	return (EXIT_SUCCESS);
+	return (shell_exit_code);
 }

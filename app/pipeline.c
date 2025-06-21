@@ -26,9 +26,9 @@ static void _exec(parsed_line_t *command)
     builtin_t builtin = builtin_find(program);
     if (builtin)
     {
-        builtin(command->argc, command->argv, io);
+        command_result_t result = builtin(command->argc, command->argv, io);
         io_close(&io);
-        return (_exit(0));
+        return (_exit(result.exit_code));
     }
 
     char path[PATH_MAX] = {};
