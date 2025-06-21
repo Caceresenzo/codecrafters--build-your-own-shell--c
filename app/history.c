@@ -5,6 +5,7 @@
 #include "shell.h"
 
 static vector_t g_history;
+static size_t g_last_history_append_index = 0;
 
 void history_initialize()
 {
@@ -91,6 +92,26 @@ bool history_write(const char *path)
         const char *line = history_get(index);
         fprintf(file, "%s\n", line);
     }
+
+    fclose(file);
+
+    return (true);
+}
+
+bool history_append(const char *path)
+{
+    FILE *file = fopen(path, "a");
+    if (!file)
+        return (false);
+
+    size_t size = history_size();
+    for (size_t index = g_last_history_append_index; index < size; ++index)
+    {
+        const char *line = history_get(index);
+        fprintf(file, "%s\n", line);
+    }
+
+    g_last_history_append_index = size;
 
     fclose(file);
 
