@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "shell.h"
 
@@ -40,4 +41,40 @@ const char *history_get(size_t index)
     const char **line = vector_get(&g_history, index);
 
     return (line ? *line : NULL);
+}
+
+bool history_read(const char *path)
+{
+    FILE *file = fopen(path, "r");
+    if (!file)
+        return (false);
+
+    char *line = NULL;
+    size_t buffer_length = 0;
+    while (getline(&line, &buffer_length, file) != -1)
+    {
+        size_t line_length = strlen(line);
+
+        if (line_length && line[line_length - 1] == '\n')
+        {
+            line[line_length - 1] = '\0';
+            --line_length;
+        }
+
+        if (line_length && line[line_length - 1] == '\r')
+        {
+            line[line_length - 1] = '\0';
+            --line_length;
+        }
+
+        if (line_length)
+            history_add(line);
+
+        free(line);
+        line = NULL;
+    }
+
+    fclose(file);
+
+    return (true);
 }

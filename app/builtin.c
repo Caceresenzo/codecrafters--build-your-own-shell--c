@@ -91,19 +91,37 @@ void builtin_cd(int argc, char **argv, io_t io)
 		dprintf(io.error, "cd: %s: No such file or directory\n", path);
 }
 
-void builtin_history(int argc, char **argv, io_t io)
+static void _print_history(size_t start, io_t io)
 {
 	ssize_t size = history_size();
-
-	ssize_t start = 0;
-	if (argc > 1)
-		start = size - atoi(argv[1]);
 
 	for (size_t index = start; index < size; ++index)
 	{
 		const char *line = history_get(index);
 		dprintf(io.output, "%5zu  %s\n", index + 1, line);
 	}
+}
+
+void builtin_history(int argc, char **argv, io_t io)
+{
+	const char *first = argc > 1 ? argv[1] : NULL;
+
+	if (first)
+	{
+		if (strcmp(first, "-r") == 0)
+		{
+			history_read(argv[2]);
+			return;
+		}
+
+		ssize_t size = history_size();
+		ssize_t start = size - atoi(argv[1]);
+
+		_print_history(start, io);
+		return;
+	}
+
+	_print_history(0, io);
 }
 
 builtin_entry_t g_builtins[] = {
