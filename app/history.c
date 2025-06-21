@@ -4,12 +4,23 @@
 
 #include "shell.h"
 
+#define HISTFILE_ENVVAR "HISTFILE"
+
 static vector_t g_history;
 static size_t g_last_history_append_index = 0;
+
+const char *history_get_file()
+{
+    return (getenv(HISTFILE_ENVVAR));
+}
 
 void history_initialize()
 {
     g_history = vector_initialize(sizeof(char *));
+
+    const char *history_file = history_get_file();
+    if (history_file)
+        history_read(history_file);
 }
 
 void history_destroy()
