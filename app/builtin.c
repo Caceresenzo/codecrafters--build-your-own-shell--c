@@ -5,16 +5,19 @@
 
 #include "shell.h"
 
-void builtin_exit(int argc, char **argv, io_t io)
+command_result_t builtin_exit(int argc, char **argv, io_t io)
 {
-	exit(0);
+	return ((command_result_t){
+		.exit_code = 0,
+		.exit_shell = true,
+	});
 
 	(void)argc;
 	(void)argv;
 	(void)io;
 }
 
-void builtin_echo(int argc, char **argv, io_t io)
+command_result_t builtin_echo(int argc, char **argv, io_t io)
 {
 	int last = argc - 1;
 	for (int index = 1; index < argc; ++index)
@@ -26,9 +29,14 @@ void builtin_echo(int argc, char **argv, io_t io)
 	}
 
 	dprintf(io.output, "\n");
+
+	return ((command_result_t){
+		.exit_code = 0,
+		.exit_shell = false,
+	});
 }
 
-void builtin_type(int argc, char **argv, io_t io)
+command_result_t builtin_type(int argc, char **argv, io_t io)
 {
 	char *program = argv[1];
 
@@ -36,28 +44,46 @@ void builtin_type(int argc, char **argv, io_t io)
 	if (builtin)
 	{
 		dprintf(io.output, "%s is a shell builtin\n", program);
-		return;
+
+		return ((command_result_t){
+			.exit_code = 0,
+			.exit_shell = false,
+		});
 	}
 
 	char path[PATH_MAX] = {};
 	if (locate(program, path))
 	{
 		dprintf(io.output, "%s is %s\n", program, path);
-		return;
+
+		return ((command_result_t){
+			.exit_code = 0,
+			.exit_shell = false,
+		});
 	}
 
 	dprintf(io.output, "%s: not found\n", program);
+
+	return ((command_result_t){
+		.exit_code = 0,
+		.exit_shell = false,
+	});
 }
 
-void builtin_pwd(int argc, char **argv, io_t io)
+command_result_t builtin_pwd(int argc, char **argv, io_t io)
 {
 	char path[PATH_MAX] = {};
 	getcwd(path, sizeof(path));
 
 	dprintf(io.output, "%s\n", path);
+
+	return ((command_result_t){
+		.exit_code = 0,
+		.exit_shell = false,
+	});
 }
 
-void builtin_cd(int argc, char **argv, io_t io)
+command_result_t builtin_cd(int argc, char **argv, io_t io)
 {
 	char absolute_path[PATH_MAX] = {};
 
@@ -84,11 +110,20 @@ void builtin_cd(int argc, char **argv, io_t io)
 		}
 	}
 
-	if (!*absolute_path)
-		return;
-
-	if (chdir(absolute_path) == -1)
+	if (*absolute_path && chdir(absolute_path) == -1)
+	{
 		dprintf(io.error, "cd: %s: No such file or directory\n", path);
+
+		return ((command_result_t){
+			.exit_code = 1,
+			.exit_shell = false,
+		});
+	}
+
+	return ((command_result_t){
+		.exit_code = 0,
+		.exit_shell = false,
+	});
 }
 
 static void _print_history(size_t start, io_t io)
@@ -102,38 +137,33 @@ static void _print_history(size_t start, io_t io)
 	}
 }
 
-void builtin_history(int argc, char **argv, io_t io)
+command_result_t builtin_history(int argc, char **argv, io_t io)
 {
 	const char *first = argc > 1 ? argv[1] : NULL;
 
 	if (first)
 	{
 		if (strcmp(first, "-r") == 0)
-		{
 			history_read(argv[2]);
-			return;
-		}
-
-		if (strcmp(first, "-w") == 0)
-		{
+		else if (strcmp(first, "-w") == 0)
 			history_write(argv[2]);
-			return;
-		}
-
-		if (strcmp(first, "-a") == 0)
-		{
+		else if (strcmp(first, "-a") == 0)
 			history_append(argv[2]);
-			return;
+		else
+		{
+			ssize_t size = history_size();
+			ssize_t start = size - atoi(argv[1]);
+
+			_print_history(start, io);
 		}
-
-		ssize_t size = history_size();
-		ssize_t start = size - atoi(argv[1]);
-
-		_print_history(start, io);
-		return;
 	}
+	else
+		_print_history(0, io);
 
-	_print_history(0, io);
+	return ((command_result_t){
+		.exit_code = 0,
+		.exit_shell = false,
+	});
 }
 
 builtin_entry_t g_builtins[] = {
