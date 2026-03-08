@@ -119,6 +119,9 @@ static void collect_files(vector_t *candidates, const char *directory, const cha
     struct dirent *entity;
     while ((entity = readdir(dir)) != NULL)
     {
+        if (strcmp(entity->d_name, ".") == 0 || strcmp(entity->d_name, "..") == 0)
+            continue;
+
         if (strncmp(prefix, entity->d_name, prefix_length) != 0)
             continue;
 
