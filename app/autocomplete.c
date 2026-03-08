@@ -246,7 +246,7 @@ e_autocomplete_result autocomplete(vector_t *line, bool bell_rung)
         collect_files(&candidates, parent, prefix);
     }
 
-    vector_sort(&candidates, string_compare_short_first);
+    vector_sort(&candidates, string_compare);
 
     e_autocomplete_result result;
 

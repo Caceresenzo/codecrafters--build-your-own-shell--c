@@ -29,6 +29,5 @@ size_t vector_last_index_of(vector_t *vector, const void *item, int (*comparator
 
 int char_compare(const void *left, const void *right);
 int string_compare(const void *left, const void *right);
-int string_compare_short_first(const void *left, const void *right);
 
 #endif
