@@ -28,25 +28,29 @@ static void commit(vector_t *line, char *candidate, bool has_more)
     vector_append(line, &space);
 }
 
-static void collect_builtins(vector_t *candidates, vector_t *line)
+static void collect_builtins(vector_t *candidates, const char *prefix)
 {
+    size_t prefix_length = strlen(prefix);
+
     for (builtin_entry_t *entry = g_builtins; entry->name; ++entry)
     {
-        if (strncmp(line->pointer, entry->name, line->length) == 0)
+        if (strncmp(prefix, entry->name, prefix_length) == 0)
         {
-            char *candidate = strdup(entry->name + line->length);
+            char *candidate = strdup(entry->name + prefix_length);
             vector_append(candidates, &candidate);
         }
     }
 }
 
-static void collect_executables(vector_t *candidates, vector_t *line)
+static void collect_executables(vector_t *candidates, const char *prefix)
 {
     struct stat path_stat;
 
     const char *paths = getenv("PATH");
     if (!paths)
         return;
+
+    size_t prefix_length = strlen(prefix);
 
     const char *directory_iterator = paths;
     while (true)
@@ -72,7 +76,7 @@ static void collect_executables(vector_t *candidates, vector_t *line)
         struct dirent *entity;
         while ((entity = readdir(dir)) != NULL)
         {
-            if (strncmp(line->pointer, entity->d_name, line->length) != 0)
+            if (strncmp(prefix, entity->d_name, prefix_length) != 0)
                 continue;
 
             memcpy(path, directory, directory_length);
@@ -89,7 +93,7 @@ static void collect_executables(vector_t *candidates, vector_t *line)
             if (access(path, F_OK | X_OK) != 0)
                 continue;
 
-            char *candidate = entity->d_name + line->length;
+            char *candidate = entity->d_name + prefix_length;
             if (vector_contains(candidates, &candidate, string_compare))
                 continue;
 
@@ -104,6 +108,31 @@ static void collect_executables(vector_t *candidates, vector_t *line)
     }
 }
 
+static void collect_files(vector_t *candidates, const char *directory, const char *prefix)
+{
+    size_t prefix_length = strlen(prefix);
+
+    if (!directory)
+        directory = ".";
+
+    DIR *dir = opendir(directory);
+    struct dirent *entity;
+    while ((entity = readdir(dir)) != NULL)
+    {
+        if (strncmp(prefix, entity->d_name, prefix_length) != 0)
+            continue;
+
+        char *candidate = entity->d_name + prefix_length;
+        if (vector_contains(candidates, &candidate, string_compare))
+            continue;
+
+        candidate = strdup(entity->d_name + prefix_length);
+        vector_append(candidates, &candidate);
+    }
+
+    closedir(dir);
+}
+
 static char *find_shared_prefix(vector_t *candidates)
 {
     const char *first = *((char **)vector_get(candidates, 0));
@@ -112,9 +141,11 @@ static char *find_shared_prefix(vector_t *candidates)
     if (first_length == 0)
         return (NULL);
 
-    size_t end = 1;
-    for (; end < first_length; ++end)
+    size_t end = 0;
+    while (end < first_length)
     {
+        ++end;
+
         bool one_is_not_matching = false;
 
         for (size_t index = 1; index < candidates->length; ++index)
@@ -149,8 +180,54 @@ e_autocomplete_result autocomplete(vector_t *line, bool bell_rung)
 {
     vector_t candidates = vector_initialize(sizeof(char *));
 
-    collect_builtins(&candidates, line);
-    collect_executables(&candidates, line);
+    static char SPACE = ' ';
+    size_t last_space_index = vector_last_index_of(line, &SPACE, char_compare);
+    bool is_command = last_space_index == (size_t)-1;
+    char *beginning = is_command
+                          ? strndup(line->pointer, line->length)
+                          : strndup((char *)line->pointer + last_space_index + 1, line->length - last_space_index - 1);
+
+    char *parent = NULL;
+    char *prefix = NULL;
+
+    size_t beginning_length = strlen(beginning);
+    if (beginning_length == 0)
+    {
+        parent = NULL;
+        prefix = strdup("");
+    }
+    else if (beginning[beginning_length - 1] == '/')
+    {
+        parent = strdup(beginning);
+        prefix = strdup("");
+    }
+    else
+    {
+        char *last_slash = strrchr(beginning, '/');
+
+        if (last_slash)
+        {
+            size_t parent_length = last_slash - beginning + 1;
+            parent = strndup(beginning, parent_length);
+            prefix = strdup(beginning + parent_length);
+        }
+        else
+        {
+            parent = NULL;
+            prefix = strdup(beginning);
+        }
+    }
+
+    if (is_command)
+    {
+        collect_builtins(&candidates, prefix);
+        collect_executables(&candidates, prefix);
+    }
+
+    if (true)
+    {
+        collect_files(&candidates, parent, prefix);
+    }
 
     vector_sort(&candidates, string_compare_short_first);
 
@@ -170,14 +247,14 @@ e_autocomplete_result autocomplete(vector_t *line, bool bell_rung)
     }
     else
     {
-        char *prefix = find_shared_prefix(&candidates);
-        if (prefix)
+        char *shared_prefix = find_shared_prefix(&candidates);
+        if (shared_prefix)
         {
             result = AR_FOUND;
 
-            commit(line, prefix, true);
+            commit(line, shared_prefix, true);
 
-            free(prefix);
+            free(shared_prefix);
         }
         else
         {
@@ -208,6 +285,9 @@ e_autocomplete_result autocomplete(vector_t *line, bool bell_rung)
         free(*((char **)vector_get(&candidates, index)));
 
     vector_destroy(&candidates);
+    free(beginning);
+    free(parent);
+    free(prefix);
 
     return (result);
 }

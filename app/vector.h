@@ -24,7 +24,10 @@ bool vector_pop(vector_t *vector);
 void vector_add_all_iterate(vector_t *vector, const void *item, size_t count);
 bool vector_contains(const vector_t *vector, const void *item, int (*comparator)(const void *, const void *));
 void vector_sort(const vector_t *vector, int (*comparator)(const void *, const void *));
+size_t vector_index_of(vector_t *vector, const void *item, int (*comparator)(const void *, const void *));
+size_t vector_last_index_of(vector_t *vector, const void *item, int (*comparator)(const void *, const void *));
 
+int char_compare(const void *left, const void *right);
 int string_compare(const void *left, const void *right);
 int string_compare_short_first(const void *left, const void *right);
 

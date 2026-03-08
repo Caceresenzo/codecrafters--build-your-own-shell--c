@@ -44,6 +44,32 @@ void vector_shrink(vector_t *vector)
     vector_resize(vector, vector->length);
 }
 
+size_t vector_index_of(vector_t *vector, const void *item, int (*comparator)(const void *, const void *))
+{
+    for (size_t index = 0; index < vector->length; ++index)
+    {
+        const void *right = vector_get((vector_t *)vector, index);
+
+        if (comparator(item, right) == 0)
+            return (index);
+    }
+
+    return (-1);
+}
+
+size_t vector_last_index_of(vector_t *vector, const void *item, int (*comparator)(const void *, const void *))
+{
+    for (size_t index = vector->length - 1; index != (size_t)-1; --index)
+    {
+        const void *right = vector_get((vector_t *)vector, index);
+
+        if (comparator(item, right) == 0)
+            return (index);
+    }
+
+    return (-1);
+}
+
 void *vector_get(vector_t *vector, size_t index)
 {
     if (index >= vector->length)
@@ -113,6 +139,11 @@ void vector_sort(const vector_t *vector, int (*comparator)(const void *, const v
         return;
 
     qsort(vector->pointer, vector->length, vector->item_size, comparator);
+}
+
+int char_compare(const void *left, const void *right)
+{
+    return (*((char *)left) - *((char *)right));
 }
 
 int string_compare(const void *left, const void *right)
