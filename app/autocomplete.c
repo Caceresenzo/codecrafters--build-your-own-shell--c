@@ -20,7 +20,7 @@ static void commit(vector_t *line, char *candidate, bool has_more)
     write(STDOUT_FILENO, candidate, length);
     vector_add_all_iterate(line, candidate, length);
 
-    if (has_more)
+    if (has_more || candidate[length - 1] == '/')
         return;
 
     char space = ' ';
@@ -126,10 +126,24 @@ static void collect_files(vector_t *candidates, const char *directory, const cha
             continue;
 
         char *candidate = entity->d_name + prefix_length;
-        if (vector_contains(candidates, &candidate, string_compare))
-            continue;
+        if (entity->d_type == DT_DIR)
+        {
+            size_t candidate_length = strlen(candidate);
+            char *candidate_with_slash = malloc(candidate_length + 2);
+            memcpy(candidate_with_slash, candidate, candidate_length);
+            candidate_with_slash[candidate_length] = '/';
+            candidate_with_slash[candidate_length + 1] = '\0';
+            candidate = candidate_with_slash;
+        }
+        else
+            candidate = strdup(candidate);
 
-        candidate = strdup(entity->d_name + prefix_length);
+        if (vector_contains(candidates, &candidate, string_compare))
+        {
+            free(candidate);
+            continue;
+        }
+
         vector_append(candidates, &candidate);
     }
 
@@ -272,7 +286,7 @@ e_autocomplete_result autocomplete(vector_t *line, bool bell_rung)
                     if (index != 0)
                         write_string("  ");
 
-                    write_string_n(line->pointer, line->length);
+                    write_string(prefix);
                     char **candidate = vector_get(&candidates, index);
                     write_string(*candidate);
                 }
