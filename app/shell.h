@@ -51,6 +51,7 @@ typedef struct
     int argc;
     redirect_t *redirects;
     size_t redirect_count;
+    bool is_job;
 } parsed_line_t;
 
 vector_t line_parse(const char *line);
