@@ -74,13 +74,21 @@ e_autocomplete_result autocomplete(vector_t *line, bool bell_rung);
 
 pid_t pipeline(vector_t commands);
 
-void history_initialize();
-void history_destroy();
+void history_initialize(void);
+void history_destroy(void);
 void history_add(const char *line);
-size_t history_size();
+size_t history_size(void);
 const char *history_get(size_t index);
 bool history_read(const char *path);
 bool history_write(const char *path);
 bool history_append(const char *path);
+
+void jobs_initialize(void);
+void jobs_destroy(void);
+int jobs_get_next_number();
+void jobs_dump(void);
+void jobs_add(pid_t pid, char **argv, size_t argc);
+
+char *strjoin(char **strings, size_t count, const char *separator);
 
 #endif

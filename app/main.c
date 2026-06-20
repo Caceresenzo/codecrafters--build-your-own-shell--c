@@ -198,7 +198,7 @@ command_result_t shell_exec(char **argv, int argc, io_t io, bool is_job)
 	{
 		if (is_job)
 		{
-			printf("[1] %d\n", pid);
+			jobs_add(pid, argv, argc);
 
 			return ((command_result_t){
 				.exit_code = 0,
@@ -254,6 +254,7 @@ command_result_t shell_eval(char *line)
 int main()
 {
 	history_initialize();
+	jobs_initialize();
 
 	vector_t line = vector_initialize(sizeof(char));
 	vector_resize(&line, 100);
@@ -281,5 +282,7 @@ int main()
 	vector_destroy(&line);
 
 	history_destroy();
+	jobs_destroy();
+
 	return (shell_exit_code);
 }
