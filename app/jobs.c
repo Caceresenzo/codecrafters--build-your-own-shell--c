@@ -44,10 +44,20 @@ void jobs_add(pid_t pid, char **argv, size_t argc)
 
 void jobs_dump(void)
 {
+    size_t most_recent_index = g_jobs.length - 1;
+    size_t previous_index = most_recent_index - 1;
+
     for (size_t index = 0; index < g_jobs.length; ++index)
     {
         job_t *job = vector_get(&g_jobs, index);
-        printf("[%d]+  Running                 %s &\n", job->number, job->command);
+
+        char symbol = ' ';
+        if (index == most_recent_index)
+            symbol = '+';
+        else if (index == previous_index)
+            symbol = '-';
+
+        printf("[%d]%c  Running                 %s &\n", job->number, symbol, job->command);
     }
 }
 
