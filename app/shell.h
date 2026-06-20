@@ -86,7 +86,7 @@ bool history_append(const char *path);
 void jobs_initialize(void);
 void jobs_destroy(void);
 int jobs_get_next_number();
-void jobs_dump(void);
+void jobs_dump();
 void jobs_add(pid_t pid, char **argv, size_t argc);
 
 char *strjoin(char **strings, size_t count, const char *separator);

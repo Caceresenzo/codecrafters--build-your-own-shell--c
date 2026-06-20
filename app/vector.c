@@ -87,6 +87,18 @@ void vector_append(vector_t *vector, const void *item)
     ++vector->length;
 }
 
+void vector_remove(vector_t *vector, size_t index)
+{
+    if (index >= vector->length)
+        return;
+
+    char *item_pointer = to_byte_pointer_with_offset(vector, index);
+    char *next_item_pointer = to_byte_pointer_with_offset(vector, index + 1);
+
+    memmove(item_pointer, next_item_pointer, (vector->length - index - 1) * vector->item_size);
+    --vector->length;
+}
+
 bool vector_is_empty(const vector_t *vector)
 {
     return (vector->length == 0);
