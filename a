@@ -1,0 +1,17 @@
+qsd
+history -a a
+history -a a
+history -a a
+history -a a
+sleep 10 &
+jobs
+sleep 10 &
+jobs
+jobs
+jobs
+jobs
+jobs
+jobs
+jobs
+jobs
+jobs
