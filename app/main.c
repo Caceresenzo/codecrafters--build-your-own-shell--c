@@ -263,6 +263,8 @@ int main()
 
 	while (true)
 	{
+		jobs_dump(false);
+
 		e_shell_read_result read_result = shell_read(&line);
 
 		if (read_result == SRR_QUIT)

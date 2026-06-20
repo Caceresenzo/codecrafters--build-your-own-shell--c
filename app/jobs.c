@@ -54,7 +54,7 @@ static bool is_job_exited(job_t *job)
     return (WIFEXITED(status) || WIFSIGNALED(status));
 }
 
-void jobs_dump()
+void jobs_dump(bool print_running)
 {
     size_t most_recent_index = g_jobs.length - 1;
     size_t previous_index = most_recent_index - 1;
@@ -81,6 +81,8 @@ void jobs_dump()
             ampersand = "";
             vector_append(&indices_to_remove, &index);
         }
+        else if (!print_running)
+            continue;
 
         printf("[%d]%c  %-20s %s%s\n", job->number, symbol, status, job->command, ampersand);
     }

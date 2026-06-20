@@ -168,7 +168,7 @@ command_result_t builtin_history(int argc, char **argv, io_t io)
 
 command_result_t builtin_jobs(int argc, char **argv, io_t io)
 {
-	jobs_dump();
+	jobs_dump(true);
 
 	return ((command_result_t){
 		.exit_code = 0,
