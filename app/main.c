@@ -156,7 +156,7 @@ e_shell_read_result shell_read(vector_t *line)
 	return (result);
 }
 
-command_result_t shell_exec(char **argv, int argc, io_t io)
+command_result_t shell_exec(char **argv, int argc, io_t io, bool is_job)
 {
 	if (argc == 0)
 		return ((command_result_t){
@@ -171,34 +171,46 @@ command_result_t shell_exec(char **argv, int argc, io_t io)
 		return (builtin(argc, argv, io));
 
 	char path[PATH_MAX] = {};
-	if (locate(program, path))
+	if (!locate(program, path))
 	{
-		pid_t pid = fork();
-		if (pid == -1)
-			perror("fork");
-		else if (pid == 0)
-		{
-			dup2(io.output, STDOUT_FILENO);
-			dup2(io.error, STDERR_FILENO);
-
-			io_close(&io);
-
-			execvp(path, argv);
-			perror("execvp");
-			exit(1);
-		}
-		else
-			waitpid(pid, NULL, 0);
-
+		printf("%s: command not found\n", program);
 		return ((command_result_t){
-			.exit_code = 0,
+			.exit_code = 127,
 			.exit_shell = false,
 		});
 	}
 
-	printf("%s: command not found\n", program);
+	pid_t pid = fork();
+	if (pid == -1)
+		perror("fork");
+	else if (pid == 0)
+	{
+		dup2(io.output, STDOUT_FILENO);
+		dup2(io.error, STDERR_FILENO);
+
+		io_close(&io);
+
+		execvp(path, argv);
+		perror("execvp");
+		exit(1);
+	}
+	else
+	{
+		if (is_job)
+		{
+			printf("[1] %d\n", pid);
+
+			return ((command_result_t){
+				.exit_code = 0,
+				.exit_shell = false,
+			});
+		}
+
+		waitpid(pid, NULL, 0);
+	}
+
 	return ((command_result_t){
-		.exit_code = 127,
+		.exit_code = 0,
 		.exit_shell = false,
 	});
 }
@@ -219,7 +231,7 @@ command_result_t shell_eval(char *line)
 
 		io_t io = io_open(parsed_line->redirects, parsed_line->redirect_count);
 		if (io.valid)
-			result = shell_exec(parsed_line->argv, parsed_line->argc, io);
+			result = shell_exec(parsed_line->argv, parsed_line->argc, io, parsed_line->is_job);
 
 		io_close(&io);
 		line_free(parsed_line);

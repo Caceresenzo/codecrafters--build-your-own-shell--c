@@ -18,6 +18,7 @@
 #define BACKSLASH '\\'
 #define GREATER_THAN '>'
 #define PIPE '|'
+#define AMPERSAND '&'
 
 typedef struct
 {
@@ -25,6 +26,7 @@ typedef struct
     vector_t commands;
     vector_t arguments;
     vector_t redirects;
+    bool is_job;
 } parser_t;
 
 char *parse_next_argument(parser_t *);
@@ -113,12 +115,14 @@ static void parse_pipe(
         .argc = parser->arguments.length - 1,
         .redirects = parser->redirects.pointer,
         .redirect_count = parser->redirects.length,
+        .is_job = parser->is_job,
     };
 
     vector_append(&parser->commands, &parsed_line);
 
     parser->arguments = vector_initialize(sizeof(char *));
     parser->redirects = vector_initialize(sizeof(redirect_t));
+    parser->is_job = false;
 }
 
 char *parse_next_argument(
@@ -182,6 +186,13 @@ char *parse_next_argument(
         case PIPE:
         {
             parse_pipe(parser);
+
+            break;
+        }
+
+        case AMPERSAND:
+        {
+            parser->is_job = true;
 
             break;
         }
