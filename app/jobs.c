@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <sys/wait.h>
 
 typedef struct
 {
@@ -42,10 +43,23 @@ void jobs_add(pid_t pid, char **argv, size_t argc)
     printf("[%d] %d\n", number, pid);
 }
 
-void jobs_dump(void)
+static bool is_job_exited(job_t *job)
+{
+    int status = 0;
+    pid_t pid = waitpid(job->pid, &status, WNOHANG);
+
+    if (pid == 0)
+        return (false);
+
+    return (WIFEXITED(status) || WIFSIGNALED(status));
+}
+
+void jobs_dump()
 {
     size_t most_recent_index = g_jobs.length - 1;
     size_t previous_index = most_recent_index - 1;
+
+    vector_t indices_to_remove = vector_initialize(sizeof(size_t));
 
     for (size_t index = 0; index < g_jobs.length; ++index)
     {
@@ -57,8 +71,29 @@ void jobs_dump(void)
         else if (index == previous_index)
             symbol = '-';
 
-        printf("[%d]%c  Running                 %s &\n", job->number, symbol, job->command);
+        bool exited = is_job_exited(job);
+
+        const char *status = "Running";
+        const char *ampersand = " &";
+        if (exited)
+        {
+            status = "Done";
+            ampersand = "";
+            vector_append(&indices_to_remove, &index);
+        }
+
+        printf("[%d]%c  %-20s %s%s\n", job->number, symbol, status, job->command, ampersand);
     }
+
+    for (size_t index = indices_to_remove.length - 1; index != (size_t)-1; --index)
+    {
+        size_t *job_index = vector_get(&indices_to_remove, index);
+        job_t *job = vector_get(&g_jobs, *job_index);
+        free(job->command);
+        vector_remove(&g_jobs, *job_index);
+    }
+
+    vector_destroy(&indices_to_remove);
 }
 
 void jobs_destroy(void)

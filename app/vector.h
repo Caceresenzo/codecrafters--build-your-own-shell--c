@@ -18,6 +18,7 @@ void vector_resize(vector_t *vector, size_t new_capacity);
 void vector_shrink(vector_t *vector);
 void *vector_get(vector_t *vector, size_t index);
 void vector_append(vector_t *vector, const void *item);
+void vector_remove(vector_t *vector, size_t index);
 bool vector_is_empty(const vector_t *vector);
 void vector_clear(vector_t *vector);
 bool vector_pop(vector_t *vector);
