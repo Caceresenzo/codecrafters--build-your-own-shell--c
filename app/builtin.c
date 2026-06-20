@@ -166,6 +166,14 @@ command_result_t builtin_history(int argc, char **argv, io_t io)
 	});
 }
 
+command_result_t builtin_jobs(int argc, char **argv, io_t io)
+{
+	return ((command_result_t){
+		.exit_code = 0,
+		.exit_shell = false,
+	});
+}
+
 builtin_entry_t g_builtins[] = {
 	{"exit", builtin_exit},
 	{"echo", builtin_echo},
@@ -173,6 +181,7 @@ builtin_entry_t g_builtins[] = {
 	{"pwd", builtin_pwd},
 	{"cd", builtin_cd},
 	{"history", builtin_history},
+	{"jobs", builtin_jobs},
 	{},
 };
 
